@@ -24,6 +24,7 @@ type Gender = 'men' | 'women';
 export default function App() {
   const [gender, setGender] = useState<Gender>('men');
   const [searchQuery, setSearchQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [discipline, setDiscipline] = useState('All');
   const [localRecords, setLocalRecords] = useState(SWIMMING_RECORDS);
 
@@ -31,9 +32,11 @@ export default function App() {
   const disciplines = ['All', 'Freestyle', 'Butterfly'];
 
   const filteredRecords = currentRecords.filter(record => {
-    const matchesSearch = record.event.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.athlete.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.nationality.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = submittedQuery.toLowerCase();
+    const matchesSearch = !submittedQuery || 
+      record.event.toLowerCase().includes(query) ||
+      record.athlete.toLowerCase().includes(query) ||
+      record.nationality.toLowerCase().includes(query);
     
     const matchesDiscipline = discipline === 'All' || record.event.includes(discipline);
     
@@ -46,6 +49,23 @@ export default function App() {
       [gender]: prev[gender].map(r => r.id === id ? { ...r, athlete: newName } : r)
     }));
   };
+
+  const handleSearchSubmit = (e?: any) => {
+    if (e) {
+      e.preventDefault();
+      // Blur the input if it was a form submission
+      if (e.currentTarget?.querySelector) {
+        (e.currentTarget.querySelector('input') as HTMLInputElement)?.blur();
+      }
+    }
+    setSubmittedQuery(searchQuery);
+  };
+
+  useEffect(() => {
+    if (searchQuery === '') {
+      setSubmittedQuery('');
+    }
+  }, [searchQuery]);
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
@@ -98,20 +118,20 @@ export default function App() {
               </div>
             </div>
 
-            <div className="pt-8 border-t border-slate-100">
+                <div className="pt-8 border-t border-slate-100">
               <div className="p-4 bg-slate-900 rounded-sm text-white space-y-4">
                 <div>
                   <h4 className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Search Database</h4>
-                  <div className="relative group">
-                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <form onSubmit={handleSearchSubmit} className="relative group">
+                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                     <input 
                       type="text" 
-                      placeholder="Quick filter..."
+                      placeholder="Press Enter to search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-slate-800 border-none text-[10px] font-bold py-2 pl-9 pr-3 rounded-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-600"
                     />
-                  </div>
+                  </form>
                 </div>
                 <div>
                   <h4 className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Active Filters</h4>
@@ -153,29 +173,37 @@ export default function App() {
             
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
               <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  (e.currentTarget.querySelector('input') as HTMLInputElement)?.blur();
-                }}
-                className="relative w-full sm:w-72 group"
+                onSubmit={handleSearchSubmit}
+                className="relative w-full sm:w-96 flex group"
               >
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search athlete, event, or country..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-slate-300 text-xs font-bold py-2.5 pl-9 pr-10 rounded-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 placeholder:font-medium shadow-sm"
-                />
-                {searchQuery && (
-                  <button 
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="Enter name (e.g. Gretchen Walsh)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-white border border-slate-300 text-xs font-bold py-3 pl-9 pr-10 rounded-l-sm focus:border-blue-500 focus:ring-0 outline-none transition-all placeholder:text-slate-400 placeholder:font-medium shadow-sm"
+                  />
+                  {searchQuery && (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSubmittedQuery('');
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <button 
+                  type="submit"
+                  className="bg-blue-800 text-white px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-r-sm hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+                >
+                  Search
+                </button>
               </form>
               <div className="flex space-x-2 shrink-0">
                 <GenderToggle active={gender === 'men'} label="MEN" onClick={() => setGender('men')} />
@@ -207,8 +235,13 @@ export default function App() {
 
               {filteredRecords.length === 0 && (
                 <div className="p-20 text-center">
-                  <Search size={40} className="mx-auto text-slate-200 mb-4" />
-                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No matching results</p>
+                  <X size={40} className="mx-auto text-red-200 mb-4" />
+                  <p className="text-slate-900 font-black uppercase text-sm tracking-tight mb-1">
+                    {submittedQuery ? `${submittedQuery} has no records yet.` : "No matching results found"}
+                  </p>
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                    Try checking the spelling or searching a different name
+                  </p>
                 </div>
               )}
             </div>
