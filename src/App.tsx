@@ -31,6 +31,13 @@ export default function App() {
   const currentRecords = localRecords[gender];
   const disciplines = ['All', 'Freestyle', 'Butterfly'];
 
+  // Global search to see if the athlete exists at all
+  const athleteExistsGlobally = submittedQuery ? 
+    (Object.values(localRecords).flat() as SwimRecord[]).some(r => 
+      r.athlete.toLowerCase().includes(submittedQuery.toLowerCase()) ||
+      r.event.toLowerCase().includes(submittedQuery.toLowerCase())
+    ) : true;
+
   const filteredRecords = currentRecords.filter(record => {
     const query = submittedQuery.toLowerCase();
     const matchesSearch = !submittedQuery || 
@@ -42,6 +49,14 @@ export default function App() {
     
     return matchesSearch && matchesDiscipline;
   });
+
+  // Find where they are if they aren't in current view but exist globally
+  const otherGender = gender === 'men' ? 'women' : 'men';
+  const existsInOtherGender = submittedQuery && !filteredRecords.length && 
+    localRecords[otherGender].some(r => 
+      r.athlete.toLowerCase().includes(submittedQuery.toLowerCase()) ||
+      r.event.toLowerCase().includes(submittedQuery.toLowerCase())
+    );
 
   const handleUpdateAthlete = (id: string, newName: string) => {
     setLocalRecords(prev => ({
@@ -234,14 +249,38 @@ export default function App() {
               </AnimatePresence>
 
               {filteredRecords.length === 0 && (
-                <div className="p-20 text-center">
-                  <X size={40} className="mx-auto text-red-200 mb-4" />
-                  <p className="text-slate-900 font-black uppercase text-sm tracking-tight mb-1">
-                    {submittedQuery ? `${submittedQuery} has no records yet.` : "No matching results found"}
-                  </p>
-                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">
-                    Try checking the spelling or searching a different name
-                  </p>
+                <div className="p-20 text-center animate-in fade-in zoom-in duration-300">
+                  {athleteExistsGlobally ? (
+                    <div className="space-y-4">
+                      <Trophy size={40} className="mx-auto text-blue-200" />
+                      <div>
+                        <p className="text-slate-900 font-black uppercase text-sm tracking-tight mb-1">
+                          Record found in {existsInOtherGender ? (otherGender === 'men' ? "Men's" : "Women's") : gender} category
+                        </p>
+                        <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-4">
+                          The athlete you are looking for has records in a different section.
+                        </p>
+                        {existsInOtherGender && (
+                          <button 
+                            onClick={() => setGender(otherGender)}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg"
+                          >
+                            Switch to {otherGender}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <X size={40} className="mx-auto text-red-200 mb-4" />
+                      <p className="text-slate-900 font-black uppercase text-sm tracking-tight mb-1">
+                        Absolutely no record for "{submittedQuery}"
+                      </p>
+                      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                        We checked the entire database. This person does not have a registered SCY record here.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </div>

@@ -32,12 +32,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm install
 
       - name: Build
         run: npm run build
-        env:
-          NODE_ENV: production
+
+      - name: Debug Build
+        run: ls -R dist/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
